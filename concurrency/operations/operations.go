@@ -13,7 +13,7 @@ import (
 )
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to VaxciNation slots booking page")
+	fmt.Fprintf(w, "Welcome to eve'N'ts slots booking page")
 	//fmt.Fprintf(w, "Number of Slots available currently - %d", slots)
 
 }
@@ -51,12 +51,33 @@ func InitiateBooking(w http.ResponseWriter, r *http.Request) {
 		//SlotID <- slotId
 		ReqPayLoad <- userReq
 
-		slotBookingResult := <-Results
+		slotBookingResult := <-BookingResults
 
 		//close(slotID)
 		fmt.Println("Done for the User - ", userID, slotBookingResult)
 	} else {
 		util.SlotsClosed()
+	}
+}
+
+func CancelBooking(w http.ResponseWriter, r *http.Request) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	vars := mux.Vars(r)
+	eventID, _ := strconv.Atoi(vars["eventID"])
+	userID, _ := strconv.Atoi(vars["userID"])
+	var userReq util.UserCancelSlotPayload
+
+	userReq.EventID = eventID
+	userReq.UserID = userID
+	userReq.SlotID = vars["slotID"]
+
+	cancelPayLoad <- userReq
+
+	cancelled := <-CancellationResults
+
+	if cancelled{
+
 	}
 
 }

@@ -29,7 +29,7 @@ func GetSlotsAvailabilityByEventID(eventID int) (rows *sql.Row, err error) {
 
 }
 
-func UpdateSlotsAvailability(slotsInfo EventSlotUser) (res sql.Result, err error) {
+func UpdateSlotsAvailability(eventID int, updateCountVal int) (res sql.Result, err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		err = fmt.Errorf("unable to update the slots availability , Err - %q", err)
@@ -37,7 +37,7 @@ func UpdateSlotsAvailability(slotsInfo EventSlotUser) (res sql.Result, err error
 	}
 	defer db.Close()
 
-	res, err = db.Exec("update EventsInfo set SlotsAvailable=? where EventID=?", slotsInfo.NoOfSlotsAvailable-1, slotsInfo.EventID)
+	res, err = db.Exec("update EventsInfo set SlotsAvailable=? where EventID=?", updateCountVal, eventID)
 
 	return
 
@@ -57,4 +57,21 @@ func InsertSlotsInfo(slotID string, eventID int, userID int) (res sql.Result, er
 	}
 
 	return
+}
+
+func DeleteSlotsInfo(slotID string) (res sql.Result, err error) {
+	db, err := ConnectDB()
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	res, err = db.Exec("delete from SlotsInfo where SlotID=?", slotID)
+	if err != nil {
+		err = fmt.Errorf("unable to Delete slot information . Err - %v", err)
+		return
+	}
+
+	return
+
 }
