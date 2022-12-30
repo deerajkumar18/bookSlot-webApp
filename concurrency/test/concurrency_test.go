@@ -23,7 +23,7 @@ func PingBookEP(wg *sync.WaitGroup, cs chan Res, id int) {
 func TestConcurrency_SlotBooking(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
-	numberOfUsers := 9
+	numberOfUsers := 10
 	cs := make(chan Res)
 	for i := 1; i <= numberOfUsers; i++ {
 		wg.Add(1)

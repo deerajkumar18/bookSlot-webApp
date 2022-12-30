@@ -22,6 +22,7 @@ func InitiateBooking(w http.ResponseWriter, r *http.Request) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	vars := mux.Vars(r)
+	fmt.Println("Hello")
 	eventID, _ := strconv.Atoi(vars["eventID"])
 	userID, _ := strconv.Atoi(vars["userID"])
 	var userReq util.UserBookingReqPayload
@@ -53,8 +54,12 @@ func InitiateBooking(w http.ResponseWriter, r *http.Request) {
 
 		slotBookingResult := <-BookingResults
 
+		if slotBookingResult {
+			util.UpdateSlotsAvailability(eventID, slots-1)
+		}
+
 		//close(slotID)
-		fmt.Println("Done for the User - ", userID, slotBookingResult)
+		fmt.Println("Done for the User - ", userID)
 	} else {
 		util.SlotsClosed()
 	}
@@ -66,18 +71,31 @@ func CancelBooking(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	eventID, _ := strconv.Atoi(vars["eventID"])
 	userID, _ := strconv.Atoi(vars["userID"])
-	var userReq util.UserCancelSlotPayload
+	slotID := vars["slotID"]
+	var userCancelReq util.UserCancelSlotPayload
 
-	userReq.EventID = eventID
-	userReq.UserID = userID
-	userReq.SlotID = vars["slotID"]
+	userCancelReq.EventID = eventID
+	userCancelReq.UserID = userID
+	userCancelReq.SlotID = slotID
 
-	cancelPayLoad <- userReq
+	cancelPayLoad <- userCancelReq
 
 	cancelled := <-CancellationResults
 
-	if cancelled{
+	rows, err := util.GetSlotsAvailabilityByEventID(eventID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var slots int
+	rows.Scan(&slots)
 
+	if cancelled {
+		fmt.Fprintf(w, "Cancelled slot %s for the user - %d", slotID, userID)
+		util.UpdateSlotsAvailability(eventID, slots+1)
+
+	} else {
+		fmt.Fprintf(w, "Unable to process the cancellation request for slot %s ,  user - %d", slotID, userID)
 	}
 
 }

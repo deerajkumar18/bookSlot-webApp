@@ -43,25 +43,29 @@ func FormatUUIDToSlotID(uuid string, eventID, userID string) string {
 	return uuid + eventID + userID
 }
 
-func BookSlotWorker(cs chan UserBookingReqPayload, results chan EventSlotUser) {
+func BookSlotWorker(cs chan UserBookingReqPayload, results chan bool) {
 	bookingInfo := <-cs
 	slotsOccupancyDetails := EventSlotUser{bookingInfo.UserID, bookingInfo.EventID, bookingInfo.SlotID, bookingInfo.SlotCount}
 
 	res, err := InsertSlotsInfo(slotsOccupancyDetails.SlotID, slotsOccupancyDetails.EventID, slotsOccupancyDetails.UserID)
 	if err != nil {
 		log.Println("Error in inserting the slotoccupancy details , ERR -", err)
+		results <- false
 	}
 	if res != nil {
 		if rowsAffected, _ := res.RowsAffected(); rowsAffected != 1 {
 			log.Println("Insert failed for userid - ", slotsOccupancyDetails.UserID)
+			results <- false
 			return
 		}
 
 	} else {
 		log.Println("User not found , ID - ", slotsOccupancyDetails.UserID)
+		results <- false
+
 	}
 
-	results <- slotsOccupancyDetails
+	results <- true
 
 }
 
@@ -72,11 +76,12 @@ func CancelSlotWorker(cs chan UserCancelSlotPayload, result chan bool) {
 	res, err := DeleteSlotsInfo(slotsInfo.SlotID)
 	if err != nil {
 		log.Println(err)
+		result <- false
+
 	}
 
 	log.Println(res)
-
-	result <- false
+	result <- true
 
 }
 

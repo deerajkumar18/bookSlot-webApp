@@ -2,4 +2,7 @@
 GET http://localhost:8081/Home 
 
 ###
-POST  http://localhost:8081/Book/1/25
+POST  http://localhost:8081/book/1/4
+
+###
+POST http://localhost:8081/cancel/1/4/9e6a152e38b14ecc14

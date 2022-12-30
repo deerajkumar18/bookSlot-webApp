@@ -12,20 +12,20 @@ var (
 	SlotID              chan int
 	EventID             chan int
 	ReqPayLoad          chan util.UserBookingReqPayload
-	BookingResults      chan util.EventSlotUser
+	BookingResults      chan bool
 	cancelPayLoad       chan util.UserCancelSlotPayload
 	CancellationResults chan bool
-	EventUpdatePayload chan util.UpdatePayload
+	EventUpdatePayload  chan util.UpdatePayload
 )
 
 func init() {
 
 	workers := 2
 	ReqPayLoad = make(chan util.UserBookingReqPayload, workers)
-	BookingResults = make(chan util.EventSlotUser, 1)
+	BookingResults = make(chan bool, 1)
 	cancelPayLoad = make(chan util.UserCancelSlotPayload, workers)
 	CancellationResults = make(chan bool, 1)
-	EventUpdatePayload=make(chan util.UpdatePayload, workers)
+	EventUpdatePayload = make(chan util.UpdatePayload, workers)
 	//slotId := make(chan int, workers)
 	//SlotID = make(chan int, workers)
 	for i := 0; i < workers; i++ {
