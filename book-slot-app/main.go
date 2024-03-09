@@ -1,7 +1,7 @@
 package main
 
 import (
-	"concurrency/operations"
+	"BookSlotApp/operations"
 	"log"
 	"net/http"
 
@@ -11,7 +11,7 @@ import (
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/home", operations.HomePage).Methods("GET")
-	r.HandleFunc("/book/{eventID}/{userID}", operations.InitiateBooking).Methods("POST")
-	r.HandleFunc("/cancel/{eventID}/{userID}/{slotID}", operations.CancelBooking).Methods("POST")
+	r.HandleFunc("/book/{userID}", operations.InitiateBooking).Methods("POST")
+	r.HandleFunc("/cancel/{userID}/{slotID}", operations.CancelBooking).Methods("POST")
 	log.Fatal(http.ListenAndServe(":8081", r))
 }

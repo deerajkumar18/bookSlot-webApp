@@ -16,6 +16,14 @@ func ConnectDB() (db *sql.DB, err error) {
 	return
 }
 
+/*func QueryWorker(queryChan chan DbQuery, m sync.Mutex) {
+	m.Lock()
+	defer m.Lock()
+	query := <-queryChan
+	query.Query()
+
+}*/
+
 func GetSlotsAvailabilityByEventID(eventID int) (rows *sql.Row, err error) {
 	db, err := ConnectDB()
 	if err != nil {
