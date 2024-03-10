@@ -3,7 +3,6 @@ package util
 import (
 	"database/sql"
 	"fmt"
-	"log"
 )
 
 type DbQuery interface {
@@ -135,7 +134,7 @@ func (d *Delete) Query() (err error) {
 
 }*/
 
-func CancelSlotWorker(cs chan UserCancelSlotPayload, result chan bool) {
+/*func CancelSlotWorker(cs chan UserCancelSlotPayload, result chan bool) {
 
 	slotsInfo := <-cs
 
@@ -163,7 +162,7 @@ func UpdateSlotInfoWorker(cs chan UpdatePayload) {
 	if rowsAffected, _ := updateRes.RowsAffected(); rowsAffected != 1 {
 		log.Println("Event update failed for the event - ", EventSlotUpdateInfo.EventID)
 	}
-}
+}*/
 
 /*func MonitorResults(results <-chan EventSlotUser) {
 	SlotsInfo := <-results

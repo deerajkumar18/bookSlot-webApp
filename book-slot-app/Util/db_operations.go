@@ -1,7 +1,9 @@
 package util
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -24,7 +26,7 @@ func ConnectDB() (db *sql.DB, err error) {
 
 }*/
 
-func GetSlotsAvailabilityByEventID(eventID int) (rows *sql.Row, err error) {
+func GetSlotsAvailabilityByEventID(eventID int, ctx context.Context) (rows *sql.Row, err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		err = fmt.Errorf("unable to get the current status of slots availability , Err - %q", err)
@@ -33,11 +35,16 @@ func GetSlotsAvailabilityByEventID(eventID int) (rows *sql.Row, err error) {
 	defer db.Close()
 
 	rows = db.QueryRow("Select SlotsAvailable from EventsInfo where EventID=?", eventID)
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return nil, errors.New("GetSlotsAvailabilityByEventID: Context Deadline Exceeded")
+	}
+
 	return
 
 }
 
-func UpdateSlotsAvailability(eventID int, updateCountVal int) (res sql.Result, err error) {
+func UpdateSlotsAvailability(eventID int, updateCountVal int, ctx context.Context) (res sql.Result, err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		err = fmt.Errorf("unable to update the slots availability , Err - %q", err)
@@ -46,12 +53,15 @@ func UpdateSlotsAvailability(eventID int, updateCountVal int) (res sql.Result, e
 	defer db.Close()
 
 	res, err = db.Exec("update EventsInfo set SlotsAvailable=? where EventID=?", updateCountVal, eventID)
+	if ctx.Err() == context.DeadlineExceeded {
+		return nil, errors.New("UpdateSlotsAvailability: Context Deadline Exceeded")
+	}
 
 	return
 
 }
 
-func InsertSlotsInfo(slotID string, eventID int, userID int) (res sql.Result, err error) {
+func InsertSlotsInfo(slotID string, eventID int, userID int, ctx context.Context) (res sql.Result, err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		return
@@ -64,10 +74,14 @@ func InsertSlotsInfo(slotID string, eventID int, userID int) (res sql.Result, er
 		return
 	}
 
+	if ctx.Err() == context.DeadlineExceeded {
+		return nil, errors.New("InsertSlotsInfo: Context Deadline Exceeded")
+	}
+
 	return
 }
 
-func DeleteSlotsInfo(slotID string) (res sql.Result, err error) {
+func DeleteSlotsInfo(slotID string, ctx context.Context) (res sql.Result, err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		return
@@ -78,6 +92,10 @@ func DeleteSlotsInfo(slotID string) (res sql.Result, err error) {
 	if err != nil {
 		err = fmt.Errorf("unable to Delete slot information . Err - %v", err)
 		return
+	}
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return nil, errors.New("DeleteSlotsInfo: Context Deadline Exceeded")
 	}
 
 	return
