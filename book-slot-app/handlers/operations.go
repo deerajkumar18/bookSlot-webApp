@@ -7,6 +7,7 @@ import (
 
 	util "BookSlotApp/Util"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -20,7 +21,16 @@ func InitiateBooking(w http.ResponseWriter, r *http.Request) {
 	userID, _ := strconv.Atoi(vars["userID"])
 
 	reqProcessingChan := EventsAndChannelMap[eventID]
-	obj := util.NewUserBookingReqPayload(userID, eventID)
+	obj := &util.UserBookingReqPayload{
+		EventsDao: &util.EventsInfoTbl{
+			EventID: eventID,
+		},
+		SlotsDao: &util.SlotsInfoTbl{
+			UserID:  userID,
+			SlotID:  util.FormatUUIDToSlotID(uuid.New().String(), eventID, userID),
+			EventID: eventID,
+		},
+	}
 	reqProcessingChan.UserAction <- obj
 
 	if err := <-reqProcessingChan.Res; err != nil {
@@ -36,7 +46,16 @@ func CancelBooking(w http.ResponseWriter, r *http.Request) {
 	slotID := vars["slotID"]
 
 	reqProcessingChan := EventsAndChannelMap[eventID]
-	obj := util.NewUserBookingCancelReqPayload(eventID, userID, slotID)
+	obj := &util.UserCancelSlotPayload{
+		EventsDao: &util.EventsInfoTbl{
+			EventID: eventID,
+		},
+		SlotsDao: &util.SlotsInfoTbl{
+			UserID:  userID,
+			SlotID:  slotID,
+			EventID: eventID,
+		},
+	}
 
 	reqProcessingChan.UserAction <- obj
 

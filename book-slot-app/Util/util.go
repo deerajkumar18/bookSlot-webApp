@@ -1,20 +1,18 @@
 package util
 
 import (
+	"BookSlotApp/dao"
 	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type UserBookingReqPayload struct {
 	//sync.Mutex
-	UserID  int
-	EventID int
-	SlotID  string
+	EventsDao dao.EventsInfoDao
+	SlotsDao  dao.SlotsInfoDao
 }
 
 type EventSlotUser struct {
@@ -27,9 +25,8 @@ type EventSlotUser struct {
 
 type UserCancelSlotPayload struct {
 	//sync.Mutex
-	UserID  int
-	EventID int
-	SlotID  string
+	EventsDao dao.EventsInfoDao
+	SlotsDao  dao.SlotsInfoDao
 }
 
 type UpdatePayload struct {
@@ -49,11 +46,11 @@ func FormatUUIDToSlotID(uuid string, eventID, userID int) string {
 	return uuid + eID + uID
 }
 
-func NewUserBookingReqPayload(userID, eventID int) Booking {
+/*func NewUserBookingReqPayload(userID, eventID int) Booking {
 	uuid := uuid.New().String()
 	slotId := FormatUUIDToSlotID(uuid, eventID, userID)
 	return &UserBookingReqPayload{UserID: userID, EventID: eventID, SlotID: slotId}
-}
+}*/
 
 func (obj *UserBookingReqPayload) BookAction() (err error) {
 
@@ -62,62 +59,42 @@ func (obj *UserBookingReqPayload) BookAction() (err error) {
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	rows, err := GetSlotsAvailabilityByEventID(obj.EventID, ctxTimeout)
+	slots, err := obj.EventsDao.GetSlotsAvailabilityByEventID(ctxTimeout)
 	if err != nil {
 		return err
 	}
-	var slots int
-	rows.Scan(&slots)
 
 	if slots >= 1 {
-
-		res, err := InsertSlotsInfo(obj.SlotID, obj.EventID, obj.UserID, ctxTimeout)
+		err := obj.SlotsDao.InsertSlotsInfo(ctxTimeout)
 		if err != nil {
 			err = fmt.Errorf("error in inserting the slotoccupancy details , ERR - %q", err)
 			return err
 		}
-		if res != nil {
-			if rowsAffected, _ := res.RowsAffected(); rowsAffected != 1 {
-				err = fmt.Errorf("insert failed for userid - %q", obj.UserID)
-				return err
-			}
-
-		} else {
-			err = fmt.Errorf("user not found , ID - %q", obj.UserID)
-			return err
-		}
 	}
 
-	_, err = UpdateSlotsAvailability(obj.EventID, slots-1, ctxTimeout)
+	err = obj.EventsDao.UpdateSlotsAvailability("book", ctxTimeout)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func NewUserBookingCancelReqPayload(eventID, userID int, slotID string) Booking {
+/*func NewUserBookingCancelReqPayload(eventID, userID int, slotID string) Booking {
 	return &UserCancelSlotPayload{EventID: eventID, UserID: userID, SlotID: slotID}
-}
+}*/
 
 func (obj *UserCancelSlotPayload) BookAction() (err error) {
 
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	_, err = DeleteSlotsInfo(obj.SlotID, ctxTimeout)
+	err = obj.SlotsDao.DeleteSlotsInfo(ctxTimeout)
 	if err != nil {
 		return
 
 	}
 
-	rows, err := GetSlotsAvailabilityByEventID(obj.EventID, ctxTimeout)
-	if err != nil {
-		return err
-	}
-	var slots int
-	rows.Scan(&slots)
-
-	_, err = UpdateSlotsAvailability(obj.EventID, slots+1, ctxTimeout)
+	err = obj.EventsDao.UpdateSlotsAvailability("cancel", ctxTimeout)
 	if err != nil {
 		return err
 	}

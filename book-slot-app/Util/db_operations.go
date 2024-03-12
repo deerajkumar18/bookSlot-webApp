@@ -26,7 +26,13 @@ func ConnectDB() (db *sql.DB, err error) {
 
 }*/
 
-func GetSlotsAvailabilityByEventID(eventID int, ctx context.Context) (rows *sql.Row, err error) {
+type EventsInfoTbl struct {
+	EventID        int
+	EventName      string
+	SlotsAvailable int
+}
+
+func (e *EventsInfoTbl) GetSlotsAvailabilityByEventID(ctx context.Context) (SlotsAvailable int, err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		err = fmt.Errorf("unable to get the current status of slots availability , Err - %q", err)
@@ -34,17 +40,19 @@ func GetSlotsAvailabilityByEventID(eventID int, ctx context.Context) (rows *sql.
 	}
 	defer db.Close()
 
-	rows = db.QueryRow("Select SlotsAvailable from EventsInfo where EventID=?", eventID)
+	rows := db.QueryRow("Select SlotsAvailable from EventsInfo where EventID=?", e.EventID)
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return nil, errors.New("GetSlotsAvailabilityByEventID: Context Deadline Exceeded")
+		return SlotsAvailable, errors.New("GetSlotsAvailabilityByEventID: Context Deadline Exceeded")
 	}
+
+	rows.Scan(&SlotsAvailable)
 
 	return
 
 }
 
-func UpdateSlotsAvailability(eventID int, updateCountVal int, ctx context.Context) (res sql.Result, err error) {
+func (e *EventsInfoTbl) UpdateSlotsAvailability(requestType string, ctx context.Context) (err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		err = fmt.Errorf("unable to update the slots availability , Err - %q", err)
@@ -52,50 +60,84 @@ func UpdateSlotsAvailability(eventID int, updateCountVal int, ctx context.Contex
 	}
 	defer db.Close()
 
-	res, err = db.Exec("update EventsInfo set SlotsAvailable=? where EventID=?", updateCountVal, eventID)
+	slots, err := e.GetSlotsAvailabilityByEventID(ctx)
+	if err != nil {
+		return err
+	}
+
+	if requestType == "book" {
+		slots--
+	}
+
+	if requestType == "cancel" {
+		slots++
+	}
+
+	res, err := db.Exec("update EventsInfo set SlotsAvailable=? where EventID=?", slots, e.EventID)
 	if ctx.Err() == context.DeadlineExceeded {
-		return nil, errors.New("UpdateSlotsAvailability: Context Deadline Exceeded")
+		return errors.New("UpdateSlotsAvailability: Context Deadline Exceeded")
+	}
+
+	if rowsAffected, _ := res.RowsAffected(); rowsAffected != 1 {
+		err = fmt.Errorf("Update slots availability failed for event id - %q", e.EventID)
+		return err
 	}
 
 	return
 
 }
 
-func InsertSlotsInfo(slotID string, eventID int, userID int, ctx context.Context) (res sql.Result, err error) {
+type SlotsInfoTbl struct {
+	EventID int
+	UserID  int
+	SlotID  string
+}
+
+func (s *SlotsInfoTbl) InsertSlotsInfo(ctx context.Context) (err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		return
 	}
 	defer db.Close()
 
-	res, err = db.Exec("insert into SlotsInfo values(?,?,now(),?)", eventID, userID, slotID)
+	res, err := db.Exec("insert into SlotsInfo values(?,?,now(),?)", s.EventID, s.UserID, s.SlotID)
 	if err != nil {
 		err = fmt.Errorf("unable to insert slot information . Err - %v", err)
 		return
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return nil, errors.New("InsertSlotsInfo: Context Deadline Exceeded")
+		return errors.New("InsertSlotsInfo: Context Deadline Exceeded")
+	}
+
+	if rowsAffected, _ := res.RowsAffected(); rowsAffected != 1 {
+		err = fmt.Errorf("insert failed for userid - %q", s.UserID)
+		return
 	}
 
 	return
 }
 
-func DeleteSlotsInfo(slotID string, ctx context.Context) (res sql.Result, err error) {
+func (s *SlotsInfoTbl) DeleteSlotsInfo(ctx context.Context) (err error) {
 	db, err := ConnectDB()
 	if err != nil {
 		return
 	}
 	defer db.Close()
 
-	res, err = db.Exec("delete from SlotsInfo where SlotID=?", slotID)
+	res, err := db.Exec("delete from SlotsInfo where SlotID=?", s.SlotID)
 	if err != nil {
 		err = fmt.Errorf("unable to Delete slot information . Err - %v", err)
 		return
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return nil, errors.New("DeleteSlotsInfo: Context Deadline Exceeded")
+		return errors.New("DeleteSlotsInfo: Context Deadline Exceeded")
+	}
+
+	if rowsAffected, _ := res.RowsAffected(); rowsAffected != 1 {
+		err = fmt.Errorf("Delete failed for slot id - %q", s.SlotID)
+		return
 	}
 
 	return
