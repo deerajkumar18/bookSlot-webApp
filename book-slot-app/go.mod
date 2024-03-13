@@ -1,4 +1,4 @@
-module concurrency
+module BookSlotApp
 
 go 1.17
 
